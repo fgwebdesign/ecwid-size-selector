@@ -4,6 +4,17 @@
  */
 
 export default async function handler(req, res) {
+  // Configurar headers CORS para permitir solicitudes desde mushkana.com
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Max-Age', '86400'); // 24 horas
+
+  // Manejar preflight requests (OPTIONS)
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   // Solo permitir GET
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -41,7 +52,9 @@ export default async function handler(req, res) {
     // Configurar headers de caché
     res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=86400');
     
-    return res.status(200).json(data);
+    // Si no hay combinaciones, devolver array vacío (esto es válido)
+    // El producto simplemente no tiene variaciones configuradas
+    return res.status(200).json(Array.isArray(data) ? data : []);
   } catch (error) {
     console.error('Error fetching combinations:', error);
     return res.status(500).json({ 

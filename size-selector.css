@@ -47,7 +47,7 @@
   max-width: 28px !important;
   border: 1px solid #e0e0e0;
   border-radius: 4px;
-  font-size: 10px !important; /* Letra más grande y legible */
+  font-size: 10px !important;
   font-weight: 500;
   padding: 0 !important;
   cursor: pointer;
@@ -61,7 +61,6 @@
   line-height: 1;
   box-sizing: border-box;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  position: relative;
 }
 
 /* Hover para botones disponibles */
@@ -77,44 +76,18 @@
   transform: scale(0.95);
 }
 
-/* Botones agotados - Talle visible con X superpuesta */
+/* Botones agotados - Fondo rosa/rojo claro como en la imagen */
 .mushkana-size-button--out-of-stock {
-  background: #fff !important;
-  border-color: #e0e0e0 !important;
+  background: #ffebee !important; /* Rosa/rojo muy claro */
+  border-color: #ffcdd2 !important; /* Borde rosa claro */
+  color: #e57373 !important; /* Texto rojo/rosa */
   cursor: not-allowed;
-  opacity: 0.75;
-}
-
-/* Texto del talle agotado */
-.mushkana-size-button--out-of-stock .mushkana-size-text {
-  font-size: 10px !important;
   font-weight: 500;
-  color: #999 !important;
-  position: relative;
-  z-index: 1;
-}
-
-/* X roja superpuesta diagonal */
-.mushkana-size-button--out-of-stock .mushkana-size-x {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 22px !important;
-  font-weight: 300;
-  color: rgba(231, 76, 60, 0.5) !important;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 2;
 }
 
 .mushkana-size-button--out-of-stock:hover {
-  opacity: 0.9;
-  border-color: #ccc !important;
-}
-
-.mushkana-size-button--out-of-stock:hover .mushkana-size-x {
-  color: rgba(231, 76, 60, 0.6) !important;
+  background: #ffebee !important;
+  border-color: #ffcdd2 !important;
 }
 
 /* Responsive para móviles */
@@ -125,14 +98,6 @@
     min-width: 24px !important;
     max-width: 24px !important;
     font-size: 9px !important;
-  }
-  
-  .mushkana-size-button--out-of-stock .mushkana-size-text {
-    font-size: 9px !important;
-  }
-  
-  .mushkana-size-button--out-of-stock .mushkana-size-x {
-    font-size: 18px !important;
   }
   
   .mushkana-size-selector .mushkana-size-title {

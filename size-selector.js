@@ -439,11 +439,8 @@
         button.setAttribute('type', 'button');
   
       if (!size.inStock) {
-        // AGOTADO: Mostrar talle con X superpuesta
-        button.innerHTML = `
-          <span class="mushkana-size-text">${size.value}</span>
-          <span class="mushkana-size-x">×</span>
-        `;
+        // AGOTADO: Solo el texto, fondo rosa/rojo claro
+        button.textContent = size.value;
         button.classList.add('mushkana-size-button--out-of-stock');
         button.disabled = true;
         button.title = `Talla ${size.value} - Agotado`;

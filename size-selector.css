@@ -24,11 +24,11 @@
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
-    gap: 8px !important; /* Más espacio entre botones */
+    gap: 6px !important;
     width: 100% !important;
-    justify-content: center !important; /* Centrar los botones */
+    justify-content: center !important;
     align-items: center !important;
-    padding: 8px 0 !important; /* Más padding vertical */
+    padding: 6px 0 !important;
   }
   
   /* Cuando hay pocos botones, centrarlos mejor */
@@ -56,28 +56,28 @@
   
   /* Botones de talla base - Estilo minimalista y cuadrado */
   .mushkana-size-button {
-    width: 44px !important; /* Cuadrado: mismo width y height */
-    height: 44px !important; /* Cuadrado: mismo width y height */
-    min-width: 44px !important; /* Evitar que se comprima */
-    border: 1px solid;
-    border-radius: 4px; /* Bordes ligeramente redondeados */
-    font-size: 12px; /* Tamaño de fuente */
-    font-weight: 400; /* Más ligero para look minimalista */
-    transition: all 0.2s ease; /* Transición más suave */
-    padding: 0 !important; /* Sin padding para mantener cuadrado perfecto */
+    width: 36px !important; /* Cuadrado más pequeño y elegante */
+    height: 36px !important; /* Cuadrado más pequeño y elegante */
+    min-width: 36px !important;
+    max-width: 36px !important;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    padding: 0 !important;
     cursor: pointer;
     outline: none;
     user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
     position: relative;
-    overflow: visible; /* Permitir que la X se vea bien */
-    display: flex !important; /* Para centrar el contenido */
-    align-items: center !important; /* Centrar verticalmente */
-    justify-content: center !important; /* Centrar horizontalmente */
-    text-align: center !important; /* Asegurar centrado del texto */
-    background: transparent !important; /* Fondo transparente minimalista */
-    flex-direction: column; /* Para apilar talle y X */
-    gap: 2px; /* Espacio entre talle y X */
+    overflow: hidden;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    background: #fff !important;
+    line-height: 1;
   }
   
   /* ============================================
@@ -86,24 +86,22 @@
   
   /* Botones disponibles - Estilo minimalista */
   .mushkana-size-button:not(.mushkana-size-button--out-of-stock) {
-    background: transparent !important; /* Fondo transparente */
-    color: #333 !important; /* Color de texto más oscuro para mejor legibilidad */
-    border-color: #ddd !important; /* Borde más sutil */
+    background: #fff !important;
+    color: #333 !important;
+    border-color: #e0e0e0 !important;
   }
   
-  
-  /* Hover para botones disponibles - Efecto sutil */
+  /* Hover para botones disponibles */
   .mushkana-size-button:not(.mushkana-size-button--out-of-stock):hover {
-    background: rgba(0, 0, 0, 0.05) !important; /* Fondo muy sutil al hover */
-    border-color: #999 !important; /* Borde un poco más oscuro */
-    color: #000 !important; /* Texto más oscuro */
-    transform: translateY(-1px); /* Movimiento más sutil */
+    background: #f5f5f5 !important;
+    border-color: #ccc !important;
+    color: #000 !important;
   }
   
   /* Active state para botones disponibles */
   .mushkana-size-button:not(.mushkana-size-button--out-of-stock):active {
-    transform: translateY(0) scale(0.98); /* Escala más sutil */
-    background: rgba(0, 0, 0, 0.08) !important;
+    background: #eee !important;
+    transform: scale(0.96);
   }
   
   /* Responsive adjustments */
@@ -114,10 +112,11 @@
     }
     
     .mushkana-size-button {
-      width: 40px !important; /* Cuadrado más pequeño en móvil */
-      height: 40px !important; /* Cuadrado más pequeño en móvil */
-      min-width: 40px !important;
-      font-size: 11px; /* Tamaño legible en móvil */
+      width: 32px !important;
+      height: 32px !important;
+      min-width: 32px !important;
+      max-width: 32px !important;
+      font-size: 10px;
     }
     
     .mushkana-size-button--out-of-stock .mushkana-size-text {
@@ -125,7 +124,7 @@
     }
     
     .mushkana-size-button--out-of-stock .mushkana-size-x {
-      font-size: 12px !important; /* X un poco más pequeña en móvil */
+      font-size: 14px !important;
     }
     
     .mushkana-size-selector .mushkana-size-title {
@@ -164,36 +163,43 @@
      ESTILOS UNIFICADOS
      ============================================ */
   
-  /* Estilos para el texto del talle en botones agotados */
+  /* Botones agotados - Estilo minimalista con talle y X */
+  .mushkana-size-button--out-of-stock {
+    background: #fff !important;
+    border-color: #e0e0e0 !important;
+    cursor: not-allowed;
+    position: relative;
+  }
+  
+  /* Texto del talle agotado - gris tachado */
   .mushkana-size-button--out-of-stock .mushkana-size-text {
     font-size: 11px;
     font-weight: 500;
-    color: #999 !important; /* Color gris para el talle */
+    color: #bbb !important;
+    text-decoration: line-through;
     line-height: 1;
-    text-decoration: line-through; /* Tachar el talle */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
   }
   
-  /* Estilos para la X en botones agotados */
+  /* X roja superpuesta */
   .mushkana-size-button--out-of-stock .mushkana-size-x {
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 300;
-    color: #e74c3c !important; /* Color rojo para la X */
+    color: #e74c3c !important;
     line-height: 1;
-    margin-top: -2px; /* Ajuste fino para centrado */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1;
   }
   
-  /* Botones agotados - Estilo minimalista */
-  .mushkana-size-button--out-of-stock {
-    background: transparent !important; /* Fondo transparente */
-    border-color: #ddd !important; /* Borde sutil como los disponibles */
-    cursor: not-allowed;
-    opacity: 0.8; /* Ligeramente transparente */
-  }
-  
-  /* Hover para botones agotados - Efecto sutil */
+  /* Hover para botones agotados */
   .mushkana-size-button--out-of-stock:hover {
-    opacity: 1 !important; /* Más opaco al hover */
-    background: rgba(231, 76, 60, 0.03) !important; /* Fondo rojo muy sutil */
-    border-color: #e74c3c !important; /* Borde rojo al hover */
+    background: #fff5f5 !important;
+    border-color: #ffcccc !important;
   }
   

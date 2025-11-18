@@ -62,7 +62,7 @@
     max-width: 24px !important;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
-    font-size: 10px;
+    font-size: 9px; /* Tamaño de letra más pequeño */
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 0 !important;
@@ -120,17 +120,15 @@
       height: 18px !important;
       min-width: 18px !important;
       max-width: 18px !important;
-      font-size: 10px;
+      font-size: 8px; /* Tamaño más pequeño en móvil */
     }
     
     .mushkana-size-button--out-of-stock .mushkana-size-text {
-      font-size: 9px;
+      font-size: 8px; /* Texto más pequeño en móvil */
     }
     
     .mushkana-size-button--out-of-stock .mushkana-size-x {
-      font-size: 9px !important; /* X pequeña y sutil en móvil */
-      top: 1px;
-      right: 1px;
+      font-size: 16px !important; /* X grande ocupando todo el espacio en móvil */
     }
     
     .mushkana-size-selector .mushkana-size-title {
@@ -169,52 +167,59 @@
      ESTILOS UNIFICADOS
      ============================================ */
   
-  /* Botones agotados - Estilo minimalista con talle visible y X sutil */
+  /* Botones agotados - Estilo minimalista con X de fondo y texto delante */
   .mushkana-size-button--out-of-stock {
     background: #fff !important;
     border-color: #e0e0e0 !important;
     cursor: not-allowed;
     position: relative;
-    opacity: 0.6; /* Ligeramente transparente para indicar deshabilitado */
+    opacity: 0.7;
   }
   
-  /* Texto del talle agotado - principal, bien visible */
+  /* X roja ocupando TODO el ancho y alto del botón (fondo) */
+  .mushkana-size-button--out-of-stock .mushkana-size-x {
+    font-size: 20px; /* X grande para ocupar todo el espacio */
+    font-weight: 300;
+    color: rgba(231, 76, 60, 0.4) !important; /* Rojo claro de fondo */
+    line-height: 1;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 1; /* Detrás del texto */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Texto del talle agotado - DELANTE de la X */
   .mushkana-size-button--out-of-stock .mushkana-size-text {
-    font-size: 10px;
-    font-weight: 500;
-    color: #999 !important;
+    font-size: 9px; /* Tamaño más pequeño */
+    font-weight: 600;
+    color: #666 !important; /* Color más oscuro para mejor legibilidad */
     text-decoration: line-through;
     line-height: 1;
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    z-index: 1;
+    z-index: 2; /* DELANTE de la X */
   }
   
-  /* X roja sutil en esquina superior derecha */
-  .mushkana-size-button--out-of-stock .mushkana-size-x {
-    font-size: 10px;
-    font-weight: 600;
-    color: rgba(231, 76, 60, 0.6) !important; /* Rojo muy sutil */
-    line-height: 1;
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    z-index: 2;
-    width: auto;
-    height: auto;
-    display: block;
-  }
-  
-  /* Hover para botones agotados - efecto sutil */
+  /* Hover para botones agotados */
   .mushkana-size-button--out-of-stock:hover {
-    opacity: 0.8;
-    background: #fafafa !important;
-    border-color: #d0d0d0 !important;
+    opacity: 0.9;
+    background: #fff !important;
+    border-color: #ccc !important;
   }
   
   .mushkana-size-button--out-of-stock:hover .mushkana-size-x {
-    color: rgba(231, 76, 60, 0.8) !important; /* X un poco más visible al hover */
+    color: rgba(231, 76, 60, 0.5) !important; /* X un poco más visible al hover */
+  }
+  
+  .mushkana-size-button--out-of-stock:hover .mushkana-size-text {
+    color: #555 !important; /* Texto más oscuro al hover */
   }
   

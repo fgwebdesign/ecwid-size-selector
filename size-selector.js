@@ -231,14 +231,53 @@
     }
 
     /**
-     * Obtiene las variaciones usando REST API
+     * Obtiene las variaciones usando el endpoint proxy en Vercel
+     * El proxy usa el secret token de forma segura en el servidor
+     */
+    async function getProductVariationsFromProxy(productId, retryCount = 0) {
+      try {
+        // Usar el endpoint proxy en Vercel
+        const proxyUrl = 'https://ecwid-size-selector.vercel.app/api/combinations';
+        const url = `${proxyUrl}?productId=${productId}`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+  
+        if (!response.ok) {
+          if (response.status === 429 && retryCount < 3) {
+            // Rate limiting - esperar y reintentar
+            const delay = (retryCount + 1) * 2000;
+            log(`⏳ Rate limit alcanzado, reintentando en ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return getProductVariationsFromProxy(productId, retryCount + 1);
+          }
+          
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(`HTTP error! status: ${response.status} - ${errorData.error || ''}`);
+        }
+  
+        const variations = await response.json();
+        return variations;
+      } catch (error) {
+        log(`❌ Error obteniendo variaciones vía proxy para producto ${productId}:`, error);
+        if (retryCount < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return getProductVariationsFromProxy(productId, retryCount + 1);
+        }
+        return null;
+      }
+    }
+
+    /**
+     * Obtiene las variaciones usando REST API directamente (fallback)
      * NOTA: El endpoint /combinations requiere autenticación de servidor
-     * Por ahora intentamos con public token, pero puede fallar con 403
-     * La solución ideal sería un endpoint proxy en el servidor
+     * Este método probablemente fallará con 403, pero lo dejamos como fallback
      */
     async function getProductVariationsFromAPI(productId, retryCount = 0) {
       try {
-        // Intentar primero con public token (puede fallar con 403)
         const url = `${CONFIG.apiUrl}/${CONFIG.storeId}/products/${productId}/combinations`;
         
         const response = await fetch(url, {
@@ -250,12 +289,11 @@
   
         if (!response.ok) {
           if (response.status === 403) {
-            log(`⚠️ 403 Forbidden: El public token no tiene permisos para /combinations. Se requiere un endpoint proxy en el servidor.`);
+            log(`⚠️ 403 Forbidden: El public token no tiene permisos para /combinations.`);
             return null;
           }
           
           if (response.status === 429 && retryCount < 3) {
-            // Rate limiting - esperar y reintentar
             const delay = (retryCount + 1) * 2000;
             log(`⏳ Rate limit alcanzado, reintentando en ${delay}ms...`);
             await new Promise(resolve => setTimeout(resolve, delay));
@@ -298,8 +336,16 @@
         }
       }
 
-      // Método 2: Fallback a REST API con public token
-      log(`🔍 Intentando obtener variaciones vía REST API para producto ${productId}`);
+      // Método 2: Usar endpoint proxy en Vercel (usa secret token de forma segura)
+      log(`🔍 Intentando obtener variaciones vía proxy para producto ${productId}`);
+      const proxyResult = await getProductVariationsFromProxy(productId, retryCount);
+      if (proxyResult && proxyResult.length > 0) {
+        Cache.set(productId, proxyResult);
+        return proxyResult;
+      }
+
+      // Método 3: Fallback a REST API directa con public token (probablemente fallará con 403)
+      log(`🔍 Intentando obtener variaciones vía REST API directa para producto ${productId}`);
       const apiResult = await getProductVariationsFromAPI(productId, retryCount);
       if (apiResult && apiResult.length > 0) {
         Cache.set(productId, apiResult);

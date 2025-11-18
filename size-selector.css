@@ -24,11 +24,11 @@
     display: flex !important;
     flex-direction: row !important;
     flex-wrap: wrap !important;
-    gap: 6px !important;
+    gap: 8px !important; /* Más espacio entre botones */
     width: 100% !important;
     justify-content: center !important; /* Centrar los botones */
     align-items: center !important;
-    padding: 4px 0 !important; /* Padding vertical reducido */
+    padding: 8px 0 !important; /* Más padding vertical */
   }
   
   /* Cuando hay pocos botones, centrarlos mejor */
@@ -54,16 +54,16 @@
     text-align: left;
   }
   
-  /* Botones de talla base */
+  /* Botones de talla base - Estilo minimalista */
   .mushkana-size-button {
-    min-width: 32px; /* Reducido de 42px */
-    height: 28px; /* Reducido de 38px */
+    min-width: 40px; /* Aumentado para más espacio */
+    height: 36px; /* Aumentado para más espacio */
     border: 1px solid;
-    border-radius: 4px; /* Reducido de 6px */
-    font-size: 10px; /* Reducido de 11px */
-    font-weight: 500;
-    transition: all 0.3s cubic-bezier(0.x, 0, 0.2, 1);
-    padding: 3px 6px; /* Reducido de 5px 5px */
+    border-radius: 6px; /* Bordes más suaves */
+    font-size: 12px; /* Tamaño de fuente ligeramente mayor */
+    font-weight: 400; /* Más ligero para look minimalista */
+    transition: all 0.2s ease; /* Transición más suave */
+    padding: 8px 12px; /* Más padding para look minimalista */
     cursor: pointer;
     outline: none;
     user-select: none;
@@ -74,32 +74,33 @@
     align-items: center !important; /* Centrar verticalmente */
     justify-content: center !important; /* Centrar horizontalmente */
     text-align: center !important; /* Asegurar centrado del texto */
+    background: transparent !important; /* Fondo transparente minimalista */
   }
   
   /* ============================================
      ESTILOS PARA HOMEPAGE (FONDO NEGRO)
      ============================================ */
   
-  /* Botones disponibles */
+  /* Botones disponibles - Estilo minimalista */
   .mushkana-size-button:not(.mushkana-size-button--out-of-stock) {
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #A9A9A9 !important;
-    border-color: #A9A9A9 !important;
+    background: transparent !important; /* Fondo transparente */
+    color: #333 !important; /* Color de texto más oscuro para mejor legibilidad */
+    border-color: #ddd !important; /* Borde más sutil */
   }
   
   
-  /* Hover para botones disponibles */
+  /* Hover para botones disponibles - Efecto sutil */
   .mushkana-size-button:not(.mushkana-size-button--out-of-stock):hover {
-    background: rgba(169, 169, 169, 0.2) !important;
-    border-color: #A9A9A9 !important;
-    color: #A9A9A9 !important;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(169, 169, 169, 0.3);
+    background: rgba(0, 0, 0, 0.05) !important; /* Fondo muy sutil al hover */
+    border-color: #999 !important; /* Borde un poco más oscuro */
+    color: #000 !important; /* Texto más oscuro */
+    transform: translateY(-1px); /* Movimiento más sutil */
   }
   
   /* Active state para botones disponibles */
   .mushkana-size-button:not(.mushkana-size-button--out-of-stock):active {
-    transform: translateY(0) scale(0.95);
+    transform: translateY(0) scale(0.98); /* Escala más sutil */
+    background: rgba(0, 0, 0, 0.08) !important;
   }
   
   /* Responsive adjustments */
@@ -110,10 +111,14 @@
     }
     
     .mushkana-size-button {
-      min-width: 28px; /* Reducido para móvil */
-      height: 24px; /* Reducido para móvil */
-      font-size: 9px; /* Reducido para móvil */
-      padding: 2px 4px; /* Reducido para móvil */
+      min-width: 36px; /* Mantener buen tamaño en móvil */
+      height: 32px; /* Mantener buen tamaño en móvil */
+      font-size: 11px; /* Tamaño legible en móvil */
+      padding: 6px 10px; /* Padding cómodo en móvil */
+    }
+    
+    .mushkana-size-button--out-of-stock {
+      font-size: 16px !important; /* X un poco más pequeña en móvil */
     }
     
     .mushkana-size-selector .mushkana-size-title {
@@ -152,13 +157,21 @@
      ESTILOS UNIFICADOS
      ============================================ */
   
-  /* Botones agotados (aplica para ambos HOME y CATEGORÍAS) */
+  /* Botones agotados - Mostrar "X" roja minimalista */
   .mushkana-size-button--out-of-stock {
-    background: rgba(231, 76, 60, 0.1) !important;
-    color: #e74c3c !important;
-    border-color: rgba(231, 76, 60, 0.4) !important;
-    text-decoration: line-through;
+    background: transparent !important; /* Fondo transparente */
+    color: #e74c3c !important; /* Color rojo para la X */
+    border-color: #e74c3c !important; /* Borde rojo */
     cursor: not-allowed;
-    opacity: 0.8;
+    opacity: 0.7; /* Ligeramente transparente */
+    font-size: 18px !important; /* X más grande */
+    font-weight: 300 !important; /* X más delgada */
+    line-height: 1 !important; /* Asegurar centrado vertical de la X */
+  }
+  
+  /* Hover para botones agotados - Efecto sutil */
+  .mushkana-size-button--out-of-stock:hover {
+    opacity: 1 !important; /* Más opaco al hover */
+    background: rgba(231, 76, 60, 0.05) !important; /* Fondo rojo muy sutil */
   }
   

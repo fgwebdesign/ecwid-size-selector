@@ -439,7 +439,8 @@
         button.setAttribute('type', 'button');
   
         if (!size.inStock) {
-          // AGOTADO: Agregar clase específica
+          // AGOTADO: Mostrar "X" roja en vez del texto
+          button.textContent = '×';
           button.classList.add('mushkana-size-button--out-of-stock');
           button.disabled = true;
           button.title = `Talla ${size.value} - Agotado`;

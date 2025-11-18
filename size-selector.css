@@ -83,6 +83,19 @@
   color: #e57373 !important; /* Texto rojo/rosa */
   cursor: not-allowed;
   font-weight: 500;
+  position: relative;
+}
+
+/* Línea horizontal roja sutil en el medio */
+.mushkana-size-button--out-of-stock::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: rgba(231, 76, 60, 0.5); /* Rojo sutil */
+  transform: translateY(-50%);
 }
 
 .mushkana-size-button--out-of-stock:hover {

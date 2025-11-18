@@ -35,28 +35,33 @@
       selectors: {
         // Contenedores de productos (home, categorías, búsqueda, etc.)
         productContainers: [
-          '.ins-component__items',           // Home y categorías
-          '.ecwid-productsGrid',             // Grid de productos
-          '.ecwid-productBrowser',           // Navegador de productos
-          '.ecwid-productBrowser-productsGrid', // Grid del navegador
+          '.grid-products',                  // Grid principal de productos (Mushkana)
+          '.grid-products__items',           // Items del grid
+          '.ins-component__items',           // Home y categorías (legacy)
+          '.ecwid-productsGrid',             // Grid de productos (legacy)
+          '.ecwid-productBrowser',           // Navegador de productos (legacy)
+          '.ecwid-productBrowser-productsGrid', // Grid del navegador (legacy)
           '[data-ecwid-product-id]',         // Productos con data attribute
-          '.ecwid-product'                   // Productos individuales
+          '.ecwid-product'                   // Productos individuales (legacy)
         ],
         // Cards de productos individuales
         productCards: [
-          '.ins-component__item',            // Cards del home/categorías
-          '.ecwid-productBrowser-productsGrid-item', // Items del grid
-          '.ecwid-productsGrid-item',        // Items del grid alternativo
+          '.grid-product',                   // Cards principales (Mushkana) - PRIORITARIO
+          '.grid-product__wrap',             // Wrap de la card (Mushkana)
+          '.ins-component__item',            // Cards del home/categorías (legacy)
+          '.ecwid-productBrowser-productsGrid-item', // Items del grid (legacy)
+          '.ecwid-productsGrid-item',        // Items del grid alternativo (legacy)
           '[data-ecwid-product-id]',         // Productos con data attribute
-          '.ecwid-product'                   // Productos genéricos
+          '.ecwid-product'                   // Productos genéricos (legacy)
         ],
         // Elementos de precio (para insertar después)
         priceElements: [
-          '.ins-component__price',           // Precio en home/categorías
-          '.ecwid-productBrowser-price',     // Precio en navegador
-          '.ecwid-productsGrid-price',       // Precio en grid
-          '.ecwid-productBrowser-productsGrid-item-price', // Precio en item
-          '.ecwid-price'                     // Precio genérico
+          '.grid-product__price',            // Precio en grid-product (Mushkana) - PRIORITARIO
+          '.ins-component__price',           // Precio en home/categorías (legacy)
+          '.ecwid-productBrowser-price',     // Precio en navegador (legacy)
+          '.ecwid-productsGrid-price',       // Precio en grid (legacy)
+          '.ecwid-productBrowser-productsGrid-item-price', // Precio en item (legacy)
+          '.ecwid-price'                     // Precio genérico (legacy)
         ]
       },
       
@@ -276,10 +281,15 @@
             // Buscar link del producto de múltiples formas
             let productLink = null;
             
-            // Método 1: Buscar por ID del producto
-            const productElement = document.querySelector(`#product-${productId}, [data-ecwid-product-id="${productId}"]`);
+            // Método 1: Buscar por ID del producto (Mushkana - grid-product)
+            const productElement = document.querySelector(`.grid-product--id-${productId}, [data-product-id="${productId}"]`) ||
+                                  document.querySelector(`#product-${productId}, [data-ecwid-product-id="${productId}"]`);
             if (productElement) {
-              productLink = productElement.querySelector('a[href*="/p/"]') || 
+              // Buscar en la estructura de grid-product
+              productLink = productElement.querySelector('.grid-product__image') ||
+                           productElement.querySelector('.grid-product__title') ||
+                           productElement.querySelector('a[href*="/products/"]') ||
+                           productElement.querySelector('a[href*="/p/"]') || 
                            productElement.querySelector('a[href*="productId"]') ||
                            productElement.closest('a');
             }
@@ -297,7 +307,7 @@
               }
             }
             
-            // Método 3: Construir URL manualmente
+            // Método 3: Construir URL manualmente (fallback)
             if (!productLink) {
               const baseUrl = window.location.origin;
               window.location.href = `${baseUrl}/p/${productId}?variation=${size.variationId}`;
@@ -326,38 +336,58 @@
      * Extrae el ID del producto de múltiples formas para funcionar en todas las páginas
      */
     function extractProductId(productElement) {
-      // Método 1: ID en formato "product-XXXXXX" (home)
+      // Método 1: Data attribute data-product-id (Mushkana - grid-product__wrap)
+      if (productElement.dataset.productId) {
+        return productElement.dataset.productId;
+      }
+      
+      // Método 2: Buscar .grid-product__wrap con data-product-id (Mushkana)
+      const gridWrap = productElement.querySelector('.grid-product__wrap');
+      if (gridWrap && gridWrap.dataset.productId) {
+        return gridWrap.dataset.productId;
+      }
+      
+      // Método 3: Buscar cualquier elemento con data-product-id dentro
+      const dataAttrElement = productElement.querySelector('[data-product-id]');
+      if (dataAttrElement && dataAttrElement.dataset.productId) {
+        return dataAttrElement.dataset.productId;
+      }
+      
+      // Método 4: ID en formato "product-XXXXXX" (home legacy)
       if (productElement.id && productElement.id.startsWith('product-')) {
         return productElement.id.replace('product-', '');
       }
       
-      // Método 2: Data attribute data-ecwid-product-id
+      // Método 5: Data attribute data-ecwid-product-id (legacy)
       if (productElement.dataset.ecwidProductId) {
         return productElement.dataset.ecwidProductId;
       }
       
-      // Método 3: Buscar en elementos hijos
-      const dataAttrElement = productElement.querySelector('[data-ecwid-product-id]');
-      if (dataAttrElement) {
-        return dataAttrElement.dataset.ecwidProductId;
+      // Método 6: Buscar en elementos hijos (legacy)
+      const ecwidDataAttr = productElement.querySelector('[data-ecwid-product-id]');
+      if (ecwidDataAttr) {
+        return ecwidDataAttr.dataset.ecwidProductId;
       }
       
-      // Método 4: Extraer del link del producto
+      // Método 7: Extraer del link del producto
       const productLink = productElement.querySelector('a[href*="/p/"]') || 
-                         productElement.querySelector('a[href*="productId"]');
+                         productElement.querySelector('a[href*="productId"]') ||
+                         productElement.querySelector('a[href*="/products/"]');
       if (productLink) {
         const href = productLink.href;
-        // Buscar patrón /p/XXXXXX o productId=XXXXXX
-        const match = href.match(/\/p\/(\d+)/) || href.match(/productId[=:](\d+)/);
+        // Buscar patrón /p/XXXXXX, /products/...-pXXXXXX, o productId=XXXXXX
+        const match = href.match(/\/p\/(\d+)/) || 
+                     href.match(/-p(\d+)/) ||
+                     href.match(/productId[=:](\d+)/);
         if (match && match[1]) {
           return match[1];
         }
       }
       
-      // Método 5: Buscar en el elemento padre
-      const parent = productElement.closest('[data-ecwid-product-id]');
+      // Método 8: Buscar en el elemento padre
+      const parent = productElement.closest('[data-product-id], [data-ecwid-product-id]');
       if (parent) {
-        return parent.dataset.ecwidProductId;
+        return parent.dataset.productId || parent.dataset.ecwidProductId;
       }
       
       return null;
@@ -433,8 +463,10 @@
           log(`✅ Selector agregado al producto ${productId}`);
         } else if (!priceElement) {
           // Fallback: insertar al final del contenedor del producto
-          const productContent = productElement.querySelector('.ins-component__item-wrap-inner') ||
-                                productElement.querySelector('.ecwid-productBrowser-productsGrid-item-content') ||
+          const productContent = productElement.querySelector('.grid-product__wrap-inner') ||  // Mushkana
+                                productElement.querySelector('.ins-component__item-wrap-inner') ||  // Legacy
+                                productElement.querySelector('.ecwid-productBrowser-productsGrid-item-content') ||  // Legacy
+                                productElement.querySelector('.grid-product__wrap') ||  // Mushkana wrap
                                 productElement;
           if (productContent && !productElement.querySelector('.mushkana-size-selector')) {
             productContent.appendChild(sizeSelector);

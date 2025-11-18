@@ -20,7 +20,8 @@
     
     const CONFIG = {
       storeId: 20337891,
-      token: 'secret_C95tnqPALb4bmxwf7cJWXHyUWpU31Vmx',
+      publicToken: 'public_2BPv8L5xZC2D98Vuu2SP6Ex352hHVZcV',
+      secretToken: 'secret_yxFDL1jwygReLttrhrKXKePhxhusdJFp', // Solo para referencia, no usar en frontend
       apiUrl: 'https://app.ecwid.com/api/v3',
       sizeOptionName: 'Talle',
       debug: false, 
@@ -145,6 +146,141 @@
     // API CALLS
     // ============================================
   
+    /**
+     * Obtiene las variaciones del producto usando la JS API de Ecwid
+     * Esta es la forma correcta de obtener datos desde el storefront
+     */
+    async function getProductVariationsFromJSAPI(productId) {
+      return new Promise((resolve) => {
+        if (typeof Ecwid === 'undefined' || !Ecwid.getProduct) {
+          log('⚠️ Ecwid JS API no disponible');
+          resolve(null);
+          return;
+        }
+
+        try {
+          Ecwid.getProduct(productId, (product) => {
+            if (!product || !product.options) {
+              resolve(null);
+              return;
+            }
+
+            // Buscar la opción de talla
+            const sizeOption = product.options.find(opt => 
+              opt.name === CONFIG.sizeOptionName || 
+              opt.name === 'Talle' || 
+              opt.name === 'Talla' ||
+              opt.name === 'Size' ||
+              opt.name.toLowerCase() === 'talle' ||
+              opt.name.toLowerCase() === 'talla' ||
+              opt.name.toLowerCase() === 'size'
+            );
+
+            if (!sizeOption || !sizeOption.choices) {
+              resolve(null);
+              return;
+            }
+
+            // Construir variaciones desde las opciones
+            const variations = [];
+            if (product.combinations && product.combinations.length > 0) {
+              // Si hay combinaciones definidas, usarlas
+              product.combinations.forEach(combo => {
+                const sizeChoice = combo.options?.find(opt => 
+                  opt.name === CONFIG.sizeOptionName || 
+                  opt.name === 'Talle' || 
+                  opt.name === 'Talla' ||
+                  opt.name === 'Size'
+                );
+                
+                if (sizeChoice) {
+                  variations.push({
+                    id: combo.id,
+                    options: [sizeChoice],
+                    inStock: combo.inStock !== false,
+                    unlimited: combo.unlimited || false,
+                    sku: combo.sku,
+                    price: combo.price || product.price
+                  });
+                }
+              });
+            } else {
+              // Si no hay combinaciones, crear desde las opciones disponibles
+              sizeOption.choices.forEach(choice => {
+                variations.push({
+                  id: null, // Se generará al seleccionar
+                  options: [{
+                    name: sizeOption.name,
+                    value: choice.text || choice.title
+                  }],
+                  inStock: true, // Asumir disponible si no hay info
+                  unlimited: true,
+                  sku: null,
+                  price: product.price
+                });
+              });
+            }
+
+            resolve(variations.length > 0 ? variations : null);
+          });
+        } catch (error) {
+          log(`❌ Error usando Ecwid JS API para producto ${productId}:`, error);
+          resolve(null);
+        }
+      });
+    }
+
+    /**
+     * Obtiene las variaciones usando REST API
+     * NOTA: El endpoint /combinations requiere autenticación de servidor
+     * Por ahora intentamos con public token, pero puede fallar con 403
+     * La solución ideal sería un endpoint proxy en el servidor
+     */
+    async function getProductVariationsFromAPI(productId, retryCount = 0) {
+      try {
+        // Intentar primero con public token (puede fallar con 403)
+        const url = `${CONFIG.apiUrl}/${CONFIG.storeId}/products/${productId}/combinations`;
+        
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${CONFIG.publicToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+  
+        if (!response.ok) {
+          if (response.status === 403) {
+            log(`⚠️ 403 Forbidden: El public token no tiene permisos para /combinations. Se requiere un endpoint proxy en el servidor.`);
+            return null;
+          }
+          
+          if (response.status === 429 && retryCount < 3) {
+            // Rate limiting - esperar y reintentar
+            const delay = (retryCount + 1) * 2000;
+            log(`⏳ Rate limit alcanzado, reintentando en ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+            return getProductVariationsFromAPI(productId, retryCount + 1);
+          }
+          
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+  
+        const variations = await response.json();
+        return variations;
+      } catch (error) {
+        log(`❌ Error obteniendo variaciones vía API para producto ${productId}:`, error);
+        if (retryCount < 2 && !error.message.includes('403')) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          return getProductVariationsFromAPI(productId, retryCount + 1);
+        }
+        return null;
+      }
+    }
+
+    /**
+     * Función principal para obtener variaciones
+     * Intenta primero con JS API, luego con REST API
+     */
     async function getProductVariations(productId, retryCount = 0) {
       const cached = Cache.get(productId);
       if (cached) {
@@ -152,39 +288,26 @@
         return cached;
       }
   
-      try {
-        const url = `${CONFIG.apiUrl}/${CONFIG.storeId}/products/${productId}/combinations`;
-        
-        const response = await fetch(url, {
-          headers: {
-            'Authorization': `Bearer ${CONFIG.token}`
-          }
-        });
-  
-        if (!response.ok) {
-          if (response.status === 429 && retryCount < 3) {
-            // Rate limiting - esperar y reintentar
-            const delay = (retryCount + 1) * 2000;
-            log(`⏳ Rate limit alcanzado, reintentando en ${delay}ms...`);
-            await new Promise(resolve => setTimeout(resolve, delay));
-            return getProductVariations(productId, retryCount + 1);
-          }
-          throw new Error(`HTTP error! status: ${response.status}`);
+      // Método 1: Intentar con JS API de Ecwid (recomendado para storefront)
+      if (typeof Ecwid !== 'undefined') {
+        log(`🔍 Intentando obtener variaciones vía JS API para producto ${productId}`);
+        const jsApiResult = await getProductVariationsFromJSAPI(productId);
+        if (jsApiResult && jsApiResult.length > 0) {
+          Cache.set(productId, jsApiResult);
+          return jsApiResult;
         }
-  
-        const variations = await response.json();
-        
-        Cache.set(productId, variations);
-        
-        return variations;
-      } catch (error) {
-        log(`❌ Error obteniendo variaciones para producto ${productId}:`, error);
-        if (retryCount < 2) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-          return getProductVariations(productId, retryCount + 1);
-        }
-        return [];
       }
+
+      // Método 2: Fallback a REST API con public token
+      log(`🔍 Intentando obtener variaciones vía REST API para producto ${productId}`);
+      const apiResult = await getProductVariationsFromAPI(productId, retryCount);
+      if (apiResult && apiResult.length > 0) {
+        Cache.set(productId, apiResult);
+        return apiResult;
+      }
+
+      log(`⚠️ No se pudieron obtener variaciones para producto ${productId}`);
+      return [];
     }
   
     // ============================================

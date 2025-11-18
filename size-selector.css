@@ -56,10 +56,10 @@
   
   /* Botones de talla base - Estilo minimalista y cuadrado */
   .mushkana-size-button {
-    width: 36px !important; /* Cuadrado más pequeño y elegante */
-    height: 36px !important; /* Cuadrado más pequeño y elegante */
-    min-width: 36px !important;
-    max-width: 36px !important;
+    width: 24px !important; 
+    height: 24px !important; 
+    min-width: 24px !important;
+    max-width: 24px !important;
     border: 1px solid #e0e0e0;
     border-radius: 4px;
     font-size: 11px;
@@ -112,10 +112,10 @@
     }
     
     .mushkana-size-button {
-      width: 32px !important;
-      height: 32px !important;
-      min-width: 32px !important;
-      max-width: 32px !important;
+      width: 18px !important;
+      height: 18px !important;
+      min-width: 18px !important;
+      max-width: 18px !important;
       font-size: 10px;
     }
     

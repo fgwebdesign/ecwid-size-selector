@@ -1,16 +1,17 @@
 /**
- * Size Selector for Ecwid HOME PAGE - Mushkana
- * Custom App para mostrar variaciones de tallas en la página principal
+ * Size Selector for Ecwid - Mushkana
+ * Custom App para mostrar variaciones de tallas en TODAS las páginas
  * 
  * Características:
+ * - Funciona en HOME, CATEGORÍAS, BÚSQUEDA y todas las páginas
  * - Procesamiento en lotes para optimizar performance de API
  * - Cache inteligente en localStorage (12 horas)
- * - Observer para productos cargados dinámicamente
+ * - Observer universal para productos cargados dinámicamente
  * - Sin conflictos de hidratación con Ecwid
  * - Retry automático para rate limiting (429)
- * - 100% enfocado en la página HOME
+ * - Detección inteligente de IDs de productos
  * 
- * @version 2.0.0
+ * @version 3.0.0
  * @author Mushkana Team
  */
 
@@ -30,6 +31,35 @@
         storageKey: 'mushkana_size_cache' 
       },
       
+      // Selectores universales para productos en todas las páginas
+      selectors: {
+        // Contenedores de productos (home, categorías, búsqueda, etc.)
+        productContainers: [
+          '.ins-component__items',           // Home y categorías
+          '.ecwid-productsGrid',             // Grid de productos
+          '.ecwid-productBrowser',           // Navegador de productos
+          '.ecwid-productBrowser-productsGrid', // Grid del navegador
+          '[data-ecwid-product-id]',         // Productos con data attribute
+          '.ecwid-product'                   // Productos individuales
+        ],
+        // Cards de productos individuales
+        productCards: [
+          '.ins-component__item',            // Cards del home/categorías
+          '.ecwid-productBrowser-productsGrid-item', // Items del grid
+          '.ecwid-productsGrid-item',        // Items del grid alternativo
+          '[data-ecwid-product-id]',         // Productos con data attribute
+          '.ecwid-product'                   // Productos genéricos
+        ],
+        // Elementos de precio (para insertar después)
+        priceElements: [
+          '.ins-component__price',           // Precio en home/categorías
+          '.ecwid-productBrowser-price',     // Precio en navegador
+          '.ecwid-productsGrid-price',       // Precio en grid
+          '.ecwid-productBrowser-productsGrid-item-price', // Precio en item
+          '.ecwid-price'                     // Precio genérico
+        ]
+      },
+      
       styles: {
         hoverBorderColor: '#4ecdc4' // Color turquesa
       }
@@ -38,8 +68,6 @@
     const log = (...args) => {
       if (CONFIG.debug) console.log('[SizeSelector]', ...args);
     };
-  
-    let simpleObserver = null;
   
     const Cache = {
       getAll() {
@@ -115,6 +143,7 @@
     async function getProductVariations(productId, retryCount = 0) {
       const cached = Cache.get(productId);
       if (cached) {
+        log(`📦 Usando caché para producto ${productId}`);
         return cached;
       }
   
@@ -130,7 +159,9 @@
         if (!response.ok) {
           if (response.status === 429 && retryCount < 3) {
             // Rate limiting - esperar y reintentar
-            await new Promise(resolve => setTimeout(resolve, (retryCount + 1) * 2000));
+            const delay = (retryCount + 1) * 2000;
+            log(`⏳ Rate limit alcanzado, reintentando en ${delay}ms...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
             return getProductVariations(productId, retryCount + 1);
           }
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -142,6 +173,7 @@
         
         return variations;
       } catch (error) {
+        log(`❌ Error obteniendo variaciones para producto ${productId}:`, error);
         if (retryCount < 2) {
           await new Promise(resolve => setTimeout(resolve, 1000));
           return getProductVariations(productId, retryCount + 1);
@@ -236,15 +268,45 @@
           // DISPONIBLE: Configurar título y eventos
           button.title = `Seleccionar talla ${size.value}`;
           
-          // Click handler - HOME: El link del producto ya está disponible
+          // Click handler - Universal: Buscar link del producto de múltiples formas
           button.addEventListener('click', (e) => {
             e.stopPropagation();
             e.preventDefault();
             
-            // HOME: El producto siempre tiene su link directo
-            const productLink = document.querySelector(`#product-${productId} a`);
+            // Buscar link del producto de múltiples formas
+            let productLink = null;
+            
+            // Método 1: Buscar por ID del producto
+            const productElement = document.querySelector(`#product-${productId}, [data-ecwid-product-id="${productId}"]`);
+            if (productElement) {
+              productLink = productElement.querySelector('a[href*="/p/"]') || 
+                           productElement.querySelector('a[href*="productId"]') ||
+                           productElement.closest('a');
+            }
+            
+            // Método 2: Buscar link directo con Ecwid JS API
+            if (!productLink && typeof Ecwid !== 'undefined' && Ecwid.getProduct) {
+              try {
+                const productUrl = Ecwid.getProduct(productId);
+                if (productUrl) {
+                  window.location.href = `${productUrl}?variation=${size.variationId}`;
+                  return;
+                }
+              } catch (e) {
+                log('Error usando Ecwid.getProduct:', e);
+              }
+            }
+            
+            // Método 3: Construir URL manualmente
+            if (!productLink) {
+              const baseUrl = window.location.origin;
+              window.location.href = `${baseUrl}/p/${productId}?variation=${size.variationId}`;
+              return;
+            }
+            
+            // Método 4: Usar el link encontrado
             if (productLink) {
-              const baseUrl = productLink.href.split('?')[0];
+              const baseUrl = productLink.href.split('?')[0].split('#')[0];
               window.location.href = `${baseUrl}?variation=${size.variationId}`;
             }
           });
@@ -260,13 +322,60 @@
     // MANIPULACIÓN DEL DOM
     // ============================================
   
+    /**
+     * Extrae el ID del producto de múltiples formas para funcionar en todas las páginas
+     */
     function extractProductId(productElement) {
-      // SOLO PARA HOME: productos tienen ID en formato "product-XXXXXX"
+      // Método 1: ID en formato "product-XXXXXX" (home)
       if (productElement.id && productElement.id.startsWith('product-')) {
         return productElement.id.replace('product-', '');
       }
       
+      // Método 2: Data attribute data-ecwid-product-id
+      if (productElement.dataset.ecwidProductId) {
+        return productElement.dataset.ecwidProductId;
+      }
+      
+      // Método 3: Buscar en elementos hijos
+      const dataAttrElement = productElement.querySelector('[data-ecwid-product-id]');
+      if (dataAttrElement) {
+        return dataAttrElement.dataset.ecwidProductId;
+      }
+      
+      // Método 4: Extraer del link del producto
+      const productLink = productElement.querySelector('a[href*="/p/"]') || 
+                         productElement.querySelector('a[href*="productId"]');
+      if (productLink) {
+        const href = productLink.href;
+        // Buscar patrón /p/XXXXXX o productId=XXXXXX
+        const match = href.match(/\/p\/(\d+)/) || href.match(/productId[=:](\d+)/);
+        if (match && match[1]) {
+          return match[1];
+        }
+      }
+      
+      // Método 5: Buscar en el elemento padre
+      const parent = productElement.closest('[data-ecwid-product-id]');
+      if (parent) {
+        return parent.dataset.ecwidProductId;
+      }
+      
       return null;
+    }
+  
+    /**
+     * Encuentra el elemento de precio para insertar el selector después
+     */
+    function findPriceElement(productElement) {
+      for (const selector of CONFIG.selectors.priceElements) {
+        const priceElement = productElement.querySelector(selector);
+        if (priceElement) {
+          return priceElement;
+        }
+      }
+      
+      // Fallback: buscar cualquier elemento con clase que contenga "price"
+      return productElement.querySelector('[class*="price"]');
     }
   
     async function processProduct(productElement) {
@@ -286,6 +395,7 @@
   
       const productId = extractProductId(productElement);
       if (!productId) {
+        log('⚠️ No se pudo extraer el ID del producto');
         return;
       }
   
@@ -315,17 +425,46 @@
         return;
       }
   
-      // HOME: Insertar después del precio usando requestAnimationFrame para evitar hidratación
+      // Insertar después del precio usando requestAnimationFrame para evitar hidratación
       requestAnimationFrame(() => {
-        const priceElement = productElement.querySelector('.ins-component__price');
+        const priceElement = findPriceElement(productElement);
         if (priceElement && !productElement.querySelector('.mushkana-size-selector')) {
           priceElement.insertAdjacentElement('afterend', sizeSelector);
+          log(`✅ Selector agregado al producto ${productId}`);
+        } else if (!priceElement) {
+          // Fallback: insertar al final del contenedor del producto
+          const productContent = productElement.querySelector('.ins-component__item-wrap-inner') ||
+                                productElement.querySelector('.ecwid-productBrowser-productsGrid-item-content') ||
+                                productElement;
+          if (productContent && !productElement.querySelector('.mushkana-size-selector')) {
+            productContent.appendChild(sizeSelector);
+            log(`✅ Selector agregado al producto ${productId} (fallback)`);
+          }
         }
       });
     }
   
     let isProcessing = false;
     let processingTimeout = null;
+    
+    /**
+     * Obtiene todos los productos visibles en la página (universal)
+     */
+    function getAllProductCards() {
+      const allProducts = new Set();
+      
+      // Buscar productos usando todos los selectores posibles
+      for (const selector of CONFIG.selectors.productCards) {
+        try {
+          const products = document.querySelectorAll(`${selector}:not([data-size-selector-processed="true"])`);
+          products.forEach(product => allProducts.add(product));
+        } catch (e) {
+          log(`⚠️ Error con selector ${selector}:`, e);
+        }
+      }
+      
+      return Array.from(allProducts);
+    }
     
     async function processAllProducts() {
       // Evitar procesamiento simultáneo
@@ -347,20 +486,22 @@
           processingTimeout = setTimeout(resolve, 100);
         });
         
-        // SOLO productos del HOME que NO han sido procesados
-        const homeProducts = document.querySelectorAll('.ins-component__item:not([data-size-selector-processed="true"])');
+        // Obtener TODOS los productos visibles (no solo home)
+        const allProducts = getAllProductCards();
         
-        if (homeProducts.length === 0) {
+        if (allProducts.length === 0) {
           isProcessing = false;
           return;
         }
+  
+        log(`🔄 Procesando ${allProducts.length} productos...`);
   
         // Procesar productos en lotes para evitar saturar la API
         const batchSize = 5; // Procesar 5 productos a la vez
         const batches = [];
         
-        for (let i = 0; i < homeProducts.length; i += batchSize) {
-          batches.push(Array.from(homeProducts).slice(i, i + batchSize));
+        for (let i = 0; i < allProducts.length; i += batchSize) {
+          batches.push(allProducts.slice(i, i + batchSize));
         }
   
         // Procesar cada lote secuencialmente
@@ -372,6 +513,7 @@
               
               await processProduct(productElement);
             } catch (error) {
+              log('❌ Error procesando producto:', error);
               // NO fallar toda la cadena, continuar con los demás
             }
           });
@@ -382,6 +524,8 @@
           // Pequeña pausa entre lotes para no saturar la API
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+        
+        log(`✅ Procesamiento completado`);
       } finally {
         isProcessing = false;
         processingTimeout = null;
@@ -390,9 +534,9 @@
   
     function cleanupPreviousSelectors() {
       // Limpiar solo los duplicados, no todos los selectores
-      const products = document.querySelectorAll('.ins-component__item');
+      const allProducts = getAllProductCards();
       
-      products.forEach(product => {
+      allProducts.forEach(product => {
         const selectors = product.querySelectorAll('.mushkana-size-selector');
         
         // Si hay más de un selector, eliminar todos excepto el primero
@@ -405,7 +549,7 @@
     }
   
     // ============================================
-    // OBSERVADOR DE PRODUCTOS DINÁMICOS
+    // OBSERVADOR DE PRODUCTOS DINÁMICOS (UNIVERSAL)
     // ============================================
   
     let productObserver = null;
@@ -417,6 +561,8 @@
       
       const productsToProcess = Array.from(processingQueue);
       processingQueue.clear();
+  
+      log(`📦 Procesando cola de ${productsToProcess.length} productos...`);
   
       // Procesar en paralelo con delay escalonado
       const promises = productsToProcess.map(async (productElement, index) => {
@@ -431,6 +577,7 @@
           await processProduct(productElement);
           
         } catch (error) {
+          log('❌ Error procesando producto de la cola:', error);
           // Continuar con los demás en caso de error
         }
       });
@@ -444,64 +591,69 @@
         return;
       }
   
-      // Esperar a que el contenedor esté disponible
-      const waitForContainer = () => {
-        const homeContainer = document.querySelector('.ins-component__items');
-        
-        if (!homeContainer) {
-          setTimeout(waitForContainer, 500);
-          return;
-        }
+      // Configurar el MutationObserver para observar TODO el DOM
+      // Esto permite detectar productos en cualquier página
+      productObserver = new MutationObserver((mutations) => {
+        let newProductsFound = false;
   
-        // Configurar el MutationObserver con debounce optimizado
-        productObserver = new MutationObserver((mutations) => {
-          let newProductsFound = false;
-  
-          mutations.forEach((mutation) => {
-            mutation.addedNodes.forEach((node) => {
-              // Solo elementos del DOM
-              if (node.nodeType !== Node.ELEMENT_NODE) return;
-              
-              // Verificar si es un producto del HOME
-              if (node.classList && node.classList.contains('ins-component__item')) {
-                // Solo agregar si NO ha sido procesado
-                if (node.dataset.sizeSelectorProcessed !== 'true') {
-                  processingQueue.add(node);
-                  newProductsFound = true;
-                }
-              } else if (node.querySelectorAll) {
-                // Buscar productos del HOME dentro del nodo agregado
-                const homeProducts = node.querySelectorAll('.ins-component__item:not([data-size-selector-processed="true"])');
-                
-                if (homeProducts.length > 0) {
-                  homeProducts.forEach(productElement => {
-                    processingQueue.add(productElement);
-                  });
-                  newProductsFound = true;
+        mutations.forEach((mutation) => {
+          mutation.addedNodes.forEach((node) => {
+            // Solo elementos del DOM
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+            
+            // Verificar si es un producto usando todos los selectores
+            let isProduct = false;
+            for (const selector of CONFIG.selectors.productCards) {
+              if (node.matches && node.matches(selector)) {
+                isProduct = true;
+                break;
+              }
+            }
+            
+            if (isProduct) {
+              // Solo agregar si NO ha sido procesado
+              if (node.dataset.sizeSelectorProcessed !== 'true') {
+                processingQueue.add(node);
+                newProductsFound = true;
+              }
+            } else if (node.querySelectorAll) {
+              // Buscar productos dentro del nodo agregado
+              for (const selector of CONFIG.selectors.productCards) {
+                try {
+                  const products = node.querySelectorAll(`${selector}:not([data-size-selector-processed="true"])`);
+                  
+                  if (products.length > 0) {
+                    products.forEach(productElement => {
+                      processingQueue.add(productElement);
+                    });
+                    newProductsFound = true;
+                  }
+                } catch (e) {
+                  // Ignorar errores de selector inválido
                 }
               }
-            });
+            }
           });
-  
-          // Debounce: esperar 300ms antes de procesar la cola
-          if (newProductsFound) {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-              processQueue();
-            }, 300);
-          }
         });
   
-        // Observar SOLO el contenedor de productos del HOME
-        productObserver.observe(homeContainer, {
-          childList: true,
-          subtree: true,
-          attributes: false, // No observar cambios de atributos
-          characterData: false // No observar cambios de texto
-        });
-      };
+        // Debounce: esperar 300ms antes de procesar la cola
+        if (newProductsFound) {
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            processQueue();
+          }, 300);
+        }
+      });
   
-      waitForContainer();
+      // Observar TODO el body para capturar productos en cualquier página
+      productObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        attributes: false, // No observar cambios de atributos
+        characterData: false // No observar cambios de texto
+      });
+      
+      log('👀 Observer iniciado (observando todo el DOM)');
     }
   
     // ============================================
@@ -549,26 +701,33 @@
   
       // 1. Esperar a que Ecwid esté completamente cargado
       Ecwid.OnAPILoaded.add(function() {
+        log('✅ Ecwid API cargada');
         // Inicializar observer para productos dinámicos
         startObservingProducts();
       });
   
-      // 2. Listener para cambios de página - SOLO HOME
+      // 2. Listener para cambios de página - TODAS las páginas
       Ecwid.OnPageLoaded.add(function(page) {
-        if (page.type === 'SITE') {
-          // Esperar a que la página esté completamente renderizada
-          requestAnimationFrame(() => {
-            setTimeout(() => {
-              processAllProducts();
-            }, 300);
-          });
-        }
+        log(`📄 Página cargada: ${page.type}`);
+        // Procesar en TODAS las páginas, no solo SITE
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            processAllProducts();
+          }, 300);
+        });
       });
   
       // 3. Procesar productos iniciales de forma segura
       if (document.readyState === 'complete') {
         // DOM completamente cargado
         requestAnimationFrame(() => {
+          setTimeout(() => {
+            processAllProducts();
+          }, 800);
+        });
+      } else {
+        // Esperar a que el DOM esté listo
+        document.addEventListener('DOMContentLoaded', () => {
           setTimeout(() => {
             processAllProducts();
           }, 800);
@@ -592,7 +751,9 @@
       }
     }
   
-  
+    // ============================================
+    // API PÚBLICA
+    // ============================================
   
     window.MushkanaSizeSelector = {
       clearCache: () => {
@@ -604,21 +765,24 @@
       },
       reprocessAll: () => {
         log('🔄 Reprocesando todos los productos manualmente...');
+        // Resetear el flag de procesado para todos los productos
+        document.querySelectorAll('[data-size-selector-processed]').forEach(el => {
+          el.dataset.sizeSelectorProcessed = 'false';
+        });
         cleanupPreviousSelectors();
         processAllProducts();
       },
       getProcessedCount: () => {
-        return document.querySelectorAll('[data-size-selector-processed]').length;
+        return document.querySelectorAll('[data-size-selector-processed="true"]').length;
       },
       getTotalProducts: () => {
-        const homeProducts = document.querySelectorAll('.ins-component__item').length;
-        return homeProducts;
+        return getAllProductCards().length;
       },
       removeDuplicates: () => {
-        const products = document.querySelectorAll('.ins-component__item');
+        const allProducts = getAllProductCards();
         let duplicatesRemoved = 0;
         
-        products.forEach(product => {
+        allProducts.forEach(product => {
           const selectors = product.querySelectorAll('.mushkana-size-selector');
           if (selectors.length > 1) {
             // Mantener solo el primero, eliminar los demás
@@ -631,7 +795,15 @@
         
         return duplicatesRemoved;
       },
+      enableDebug: () => {
+        CONFIG.debug = true;
+        log('🐛 Modo debug activado');
+      },
+      disableDebug: () => {
+        CONFIG.debug = false;
+        log('🐛 Modo debug desactivado');
+      }
     };
   
-    log('📜 Script cargado');
+    log('📜 Script cargado - Versión 3.0.0 (Universal)');
   })();

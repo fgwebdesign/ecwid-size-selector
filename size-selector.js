@@ -367,17 +367,22 @@
   
       const sizes = variations
         .map(variation => {
+          // Buscar la opción de talla - puede venir como 'name' o dentro de un array
           const sizeOption = variation.options?.find(
-            opt => opt.name === CONFIG.sizeOptionName || 
-                   opt.name === 'Size' || 
-                   opt.name === 'Talla' ||
-                   opt.name === 'Talle' ||
-                   opt.name === 'TALLE' ||
-                   opt.name === 'TALLES' ||
-                   opt.name === 'Talles' ||
-                   opt.name === 'size' ||
-                   opt.name === 'talle' ||
-                   opt.name === 'talles'
+            opt => {
+              const optName = opt.name || opt.nameTranslated?.es_419 || opt.nameTranslated?.es || '';
+              return optName === CONFIG.sizeOptionName || 
+                     optName === 'Size' || 
+                     optName === 'Talla' ||
+                     optName === 'Talle' ||
+                     optName === 'TALLE' ||
+                     optName === 'TALLES' ||
+                     optName === 'Talles' ||
+                     optName.toLowerCase() === 'size' ||
+                     optName.toLowerCase() === 'talle' ||
+                     optName.toLowerCase() === 'talla' ||
+                     optName.toLowerCase() === 'talles';
+            }
           );
           
           if (!sizeOption) {

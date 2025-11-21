@@ -13,7 +13,6 @@
   margin-top: 6px !important;
   background: transparent !important;
   width: 100% !important;
-  order: 999 !important;
 }
 
 /* Botones container */
@@ -118,28 +117,21 @@
   }
 }
 
-/* Orden correcto en el contenedor del producto */
-.ins-component__item-wrap-inner {
+/* Asegurar que el selector aparezca después del precio en el flujo natural */
+.grid-product__wrap-inner {
   display: flex !important;
   flex-direction: column !important;
 }
 
-.ins-component__image {
-  order: 1 !important;
-}
-
-.ins-component__title {
-  order: 2 !important;
-}
-
-.ins-component__subtitle {
-  order: 3 !important;
-}
-
-.ins-component__price {
-  order: 4 !important;
+/* El selector debe aparecer en su posición natural después del precio */
+.grid-product__price {
+  order: 10 !important;
 }
 
 .mushkana-size-selector {
-  order: 5 !important;
+  order: 11 !important;
+}
+
+.grid-product__button {
+  order: 12 !important;
 }
